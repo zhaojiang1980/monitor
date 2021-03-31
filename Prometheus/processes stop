@@ -1,4 +1,0 @@
-topk(5,(
-max_over_time(namedprocess_namegroup_states{instance=~"$host", groupname=~"$processes", state="stopped"}[$interval]) or
-max_over_time(namedprocess_namegroup_states{instance=~"$host", groupname=~"$processes", state="zombie"}[$interval])  or
-max_over_time(namedprocess_namegroup_states{instance=~"$host", groupname=~"$processes", state="sleeping"}[5m])))
