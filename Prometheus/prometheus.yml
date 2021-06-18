@@ -1,0 +1,129 @@
+# my global config
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: ["localhost:9093"]
+#      - 10.0.0.91:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "/usr/local/Prometheus/rules/*.yml"
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+    - targets: ['localhost:9090']
+
+  - job_name: 'pre-41'
+    static_configs:
+    - targets: ['10.0.0.41:9100']
+      labels:
+        instance: pre-41
+
+  - job_name: 'pre-137'
+    static_configs:
+    - targets: ['10.0.0.137:9100']
+      labels:
+        instance: pre-137
+  - job_name: 'pre-177'
+    static_configs:
+    - targets: ['10.0.0.177:9100']
+      labels:
+        instance: pre-177
+  - job_name: 'pre-175'
+    static_configs:
+    - targets: ['10.0.0.175:9100']
+      labels:
+        instance: pre-175
+  - job_name: 'sprint_kline'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+    - targets: ['10.0.0.41:8010']
+  - job_name: 'nacos-cluster'
+    scrape_interval: 60s
+    metrics_path: '/nacos/actuator/prometheus'
+    static_configs:
+      - targets:
+         - 10.0.0.41:8848
+         - 10.0.0.137:8848
+         - 10.0.0.175:8848
+
+######2020 12 28 add  web monitor
+  - job_name: 'http_status'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['https://************', 'https://*****************']
+        labels:
+          instance: http_status
+          group: web
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: 10.0.0.177:9115
+
+#ping check
+  - job_name: 'ping_status'
+    metrics_path: /probe
+    params:
+      module: [icmp]
+    static_configs:
+      - targets: ['10.0.0.41','10.0.0.177']
+        labels:
+          instance: 'ping_status'
+          group: 'icmp'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: 10.0.0.177:9115
+
+#port check
+  - job_name: 'port_status'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets: ['10.0.0.41:8000', '10.0.0.41:8020', '10.0.0.41:8040']
+        labels:
+          instance: 'port_status'
+          group: 'port'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: 10.0.0.177:9115
+
+#api check        
+  - job_name: "check_get"
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    file_sd_configs:
+     - refresh_interval: 1m
+       files:
+       - "/usr/local/prometheus/check_get.yml"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 10.0.0.177:9115
